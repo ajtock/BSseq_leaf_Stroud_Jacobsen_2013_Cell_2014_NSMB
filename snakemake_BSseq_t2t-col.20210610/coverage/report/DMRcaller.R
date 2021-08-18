@@ -6,7 +6,7 @@
 
 # Usage:
 # ./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' \
-#               --condition2 'met1_BSseq_Rep1' \
+#               --condition2 'cmt3_BSseq_Rep1' \
 #               --refbase 't2t-col.20210610' \
 #               --context 'CHG'
 
@@ -32,18 +32,11 @@ args <- parser$parse_args()
 args_file <- "tempArgsObjectFile.rds"
 saveRDS(args, args_file); print(args)
 
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'met1_BSseq_Rep1' --refbase t2t-col.20210610 --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --context CHG")
 
 args <- readRDS(args_file)
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
 args$condition2 <- unlist(strsplit(args$condition2, split = ","))
-
-
-#mCon1_Rep1 <- readBismark("WT_BSseq_Rep1_2014_MappedOn_t2t-col.20210610_dedup_CHH.CX_report.txt.gz")
-#mCon1_Rep2 <- readBismark("WT_BSseq_Rep2_2013_MappedOn_t2t-col.20210610_dedup_CHH.CX_report.txt.gz")
-#mCon1_Rep3 <- readBismark("WT_BSseq_Rep3_2013_MappedOn_t2t-col.20210610_dedup_CHH.CX_report.txt.gz")
-
-
 
 condition1_Reps <- mclapply(seq_along(args$condition1), function(x) {
   readBismark(paste0(args$condition1[x], "_MappedOn_", args$refbase, "_dedup_", args$context, ".CX_report.txt.gz"))
@@ -56,20 +49,20 @@ conditions_Reps_list <- c(condition1_Reps, condition2_Reps)
 
 # Combine replicates into a single GRanges object containing
 # data for each condition and replicate
-repsJoined <- joinReplicates(methylationData1 = conditions_Reps_list[[1]],
-                             methylationData2 = conditions_Reps_list[[2]],
-                             usecomplete = FALSE)
+joined_Reps <- joinReplicates(methylationData1 = conditions_Reps_list[[1]],
+                              methylationData2 = conditions_Reps_list[[2]],
+                              usecomplete = FALSE)
 for(x in 3:length(conditions_Reps_list)) {
-  repsJoined <- joinReplicates(methylationData1 = repsJoined,
-                               methylationData2 = conditions_Reps_list[[x]]) 
+  joined_Reps <- joinReplicates(methylationData1 = joined_Reps,
+                                methylationData2 = conditions_Reps_list[[x]]) 
 }
 
 # Get ranges corresponding to the given context
-repsJoined <- repsJoined[repsJoined$context == sub("p", "", args$context)]
+joined_Reps <- joined_Reps[joined_Reps$context == sub("p", "", args$context)]
 
 # Sort by seqnames, strand, start, and end
-repsJoined <- sortSeqlevels(repsJoined)
-repsJoined <- sort(repsJoined)
+joined_Reps <- sortSeqlevels(joined_Reps)
+joined_Reps <- sort(joined_Reps)
 
 pdf(paste0("plotMethylationDataCoverage_",
            args$condition1[1], "_", args$condition1[2],
@@ -77,7 +70,7 @@ pdf(paste0("plotMethylationDataCoverage_",
            ".pdf"))
 plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[1]],
                             methylationData2 = conditions_Reps_list[[2]],
-                            breaks = c(1, 5, 10, 15),
+                            breaks = c(1, 3, 6, 9, 12, 15),
                             regions = NULL,
                             conditionsNames = c(args$condition1[1], args$condition1[2]),
                             context = sub("p", "", args$context),
@@ -86,7 +79,7 @@ plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[1]],
                             contextPerRow = FALSE)
 plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[3]],
                             methylationData2 = conditions_Reps_list[[4]],
-                            breaks = c(1, 5, 10, 15),
+                            breaks = c(1, 3, 6, 9, 12, 15),
                             regions = NULL,
                             conditionsNames = c(args$condition1[3], args$condition2[1]),
                             context = sub("p", "", args$context),
@@ -94,5 +87,4 @@ plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[3]],
                             labels=LETTERS,
                             contextPerRow = FALSE)
 dev.off()
-
 
