@@ -71,6 +71,28 @@ repsJoined <- repsJoined[repsJoined$context == sub("p", "", args$context)]
 repsJoined <- sortSeqlevels(repsJoined)
 repsJoined <- sort(repsJoined)
 
-
+pdf(paste0("plotMethylationDataCoverage_",
+           args$condition1[1], "_", args$condition1[2],
+           args$condition1[3], "_", args$condition2[1],
+           ".pdf"))
+plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[1]],
+                            methylationData2 = conditions_Reps_list[[2]],
+                            breaks = c(1, 5, 10, 15),
+                            regions = NULL,
+                            conditionsNames = c(args$condition1[1], args$condition1[2]),
+                            context = sub("p", "", args$context),
+                            proportion = TRUE,
+                            labels=LETTERS,
+                            contextPerRow = FALSE)
+plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[3]],
+                            methylationData2 = conditions_Reps_list[[4]],
+                            breaks = c(1, 5, 10, 15),
+                            regions = NULL,
+                            conditionsNames = c(args$condition1[3], args$condition2[1]),
+                            context = sub("p", "", args$context),
+                            proportion = TRUE,
+                            labels=LETTERS,
+                            contextPerRow = FALSE)
+dev.off()
 
 
