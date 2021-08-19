@@ -8,10 +8,12 @@
 # ./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' \
 #               --condition2 'cmt3_BSseq_Rep1' \
 #               --refbase 't2t-col.20210610' \
+#               --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
 #               --context 'CHG'
 
-#library(DMRcaller)
 library(argparse)
+library(DMRcaller)
+library(betareg) # required by DMRcaller::computeDMRsReplicates 
 
 # Create parser object
 parser <- ArgumentParser()
@@ -24,19 +26,22 @@ parser$add_argument("--condition2", type = "character",
                     help="Sample replicate prefixes for second condition for inclusion in DMRcaller contrast.")
 parser$add_argument("--refbase", type = "character", default = "t2t-col.20210610",
                     help="Reference genome base name. Default: %(default)s")
+parser$add_argument("--chrName", type = "character", default = "Chr1,Chr2,Chr3,Chr4,Chr5",
+                    help="Reference genome chromosome names for inclusion in DMRcaller contrast. Default: %(default)s")
 parser$add_argument("--context", type = "character",
                     help="cytosine methylation context.")
 
 # parse arguments
 args <- parser$parse_args()
 args_file <- "tempArgsObjectFile.rds"
-saveRDS(args, args_file); print(args)
+#saveRDS(args, args_file); print(args)
 
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --context CHG")
 
 args <- readRDS(args_file)
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
 args$condition2 <- unlist(strsplit(args$condition2, split = ","))
+args$chrName <- unlist(strsplit(args$chrName, split = ","))
 
 condition1_Reps <- mclapply(seq_along(args$condition1), function(x) {
   readBismark(paste0(args$condition1[x], "_MappedOn_", args$refbase, "_dedup_", args$context, ".CX_report.txt.gz"))
@@ -59,6 +64,9 @@ for(x in 3:length(conditions_Reps_list)) {
 
 # Get ranges corresponding to the given context
 joined_Reps <- joined_Reps[joined_Reps$context == sub("p", "", args$context)]
+
+# Get ranges corresponding to those in chrName
+joined_Reps <- joined_Reps[seqnames(joined_Reps) %in% args$chrName]
 
 # Sort by seqnames, strand, start, and end
 joined_Reps <- sortSeqlevels(joined_Reps)
@@ -87,4 +95,55 @@ plotMethylationDataCoverage(methylationData1 = conditions_Reps_list[[3]],
                             labels=LETTERS,
                             contextPerRow = FALSE)
 dev.off()
+
+
+# Create condition vector
+joined_Reps_conditions <- gsub("_.+", "", c(args$condition1, args$condition2))
+
+print("joined_Reps conditions:")
+print(joined_Reps_conditions)
+
+if(args$context == "CpG") {
+  minProportionDifference_context <- 0.4
+} else if(args$context == "CHG") {
+  minProportionDifference_context <- 0.2
+} else if(args$context == "CHH") {
+  minProportionDifference_context <- 0.1
+}
+print(paste0(args$context, " minProportionDifference = ", minProportionDifference_context))
+
+# Compute DMRs using "bins" method
+DMRsReplicates_bins <- computeDMRsReplicates(methylationData = joined_Reps,
+                                             condition = joined_Reps_conditions,
+                                             regions = NULL,
+                                             context = sub("p", "", args$context),
+                                             method = "bins",
+                                             binSize = 100,
+                                             test = "betareg",
+                                             pseudocountM = 1,
+                                             pseudocountN = 2,
+                                             pValueThreshold = 0.01,
+                                             minCytosinesCount = 4,
+                                             minProportionDifference = minProportionDifference_context,
+                                             minGap = 200,
+                                             minSize = 50,
+                                             minReadsPerCytosine = 4,
+                                             cores = 24)
+
+## Compute DMRs using "neighbourhood" method
+#DMRsReplicates_neighbourhood <- computeDMRsReplicates(methylationData = joined_Reps,
+#                                                      condition = joined_Reps_conditions,
+#                                                      regions = NULL,
+#                                                      context = sub("p", "", args$context),
+#                                                      method = "neighbourhood",
+#                                                      test = "betareg",
+#                                                      pseudocountM = 1,
+#                                                      pseudocountN = 2,
+#                                                      pValueThreshold = 0.01,
+#                                                      minCytosinesCount = 4,
+#                                                      minProportionDifference = minProportionDifference_context,
+#                                                      minGap = 200,
+#                                                      minSize = 50,
+#                                                      minReadsPerCytosine = 4,
+#                                                      cores = detectCores())
 
