@@ -5,11 +5,13 @@
 
 
 # Usage:
+# conda activate python
 # ./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' \
 #               --condition2 'cmt3_BSseq_Rep1' \
 #               --refbase 't2t-col.20210610' \
 #               --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
 #               --context 'CHG'
+# conda deactivate
 
 library(argparse)
 library(DMRcaller)
