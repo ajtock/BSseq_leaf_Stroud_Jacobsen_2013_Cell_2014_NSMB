@@ -171,7 +171,7 @@ if(length(condition2_Reps) == 1) {
                 minGap = 200,
                 minSize = 50,
                 minReadsPerCytosine = 4,
-                cores = 48) 
+                cores = detectCores()) 
   })
 
   DMRs_Rep1_bins_DMRs_Repx_bins_overlap <- lapply(seq_along(length(DMRs_per_Rep_list_bins), function(x) {
