@@ -126,22 +126,6 @@ for(x in 1:length(condition2_Reps)) {
   print(paste0("<<", x))
 }
 
-#for(x in 1:length(condition2_Reps)) {
-#  print(paste0(x, ">>"))
-#  # Get ranges corresponding to the given context
-#  condition2_Reps[[x]] <- condition2_Reps[[x]][condition2_Reps[[x]]$context == sub("p", "", args$context)]
-#
-#  # Get ranges corresponding to those in chrName
-#  condition2_Reps[[x]] <- keepSeqlevels(condition2_Reps[[x]], args$chrName, pruning.mode = "coarse")
-#
-#  # Sort by seqnames, start and end
-#  condition2_Reps[[x]] <- sortSeqlevels(condition2_Reps[[x]])
-#  condition2_Reps[[x]] <- sort(condition2_Reps[[x]], ignore.strand = TRUE)
-#
-#  print(condition2_Reps[[x]])
-#  print(paste0("<<", x))
-#}
-
 
 if(length(condition2_Reps) == 1) {
 
