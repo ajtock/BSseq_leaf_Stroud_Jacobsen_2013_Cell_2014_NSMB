@@ -1,6 +1,6 @@
-#!/applications/R/R-4.0.0/bin/Rscript
+#!/usr/bin/env Rscript
 
-# Use DMRcaller v1.20.0 to identify DMRs between two conditions
+# Use DMRcaller v1.24.0 to identify DMRs between two conditions
 # (e.g. mutant and wild type)
 
 
@@ -50,6 +50,13 @@ condition2_Reps <- mclapply(seq_along(args$condition2), function(x) {
   readBismark(paste0(args$condition2[x], "_MappedOn_", args$refbase, "_dedup_", args$context, ".CX_report.txt.gz"))
 }, mc.cores = length(args$condition2))
 
+## For pooled-replicate analysis
+#condition1_Reps_pooled <- poolMethylationDatasets(GRangesList(condition1_Reps))
+#condition2_Reps_pooled <- poolMethylationDatasets(GRangesList(condition2_Reps))
+
+# For biological replicate analysis
+# (However, computeDMRsReplicates fails with error message:
+# "Error in apply(readsM2, 1, sum) : dim(X) must have a positive length")
 conditions_Reps_list <- c(condition1_Reps, condition2_Reps)
 
 # Combine replicates into a single GRanges object containing
@@ -66,11 +73,12 @@ for(x in 3:length(conditions_Reps_list)) {
 joined_Reps <- joined_Reps[joined_Reps$context == sub("p", "", args$context)]
 
 # Get ranges corresponding to those in chrName
-joined_Reps <- joined_Reps[seqnames(joined_Reps) %in% args$chrName]
+#joined_Reps <- joined_Reps[seqnames(joined_Reps) %in% args$chrName]
+joined_Reps <- keepSeqlevels(joined_Reps, args$chrName, pruning.mode="coarse")
 
 # Sort by seqnames, strand, start, and end
 joined_Reps <- sortSeqlevels(joined_Reps)
-joined_Reps <- sort(joined_Reps)
+joined_Reps <- sort(joined_Reps, ignore.strand = TRUE)
 
 pdf(paste0("plotMethylationDataCoverage_",
            args$condition1[1], "_", args$condition1[2],
@@ -113,6 +121,22 @@ if(args$context == "CpG") {
 print(paste0(args$context, " minProportionDifference = ", minProportionDifference_context))
 
 # Compute DMRs using "bins" method
+DMRs_bins <- computeDMRs(methylationData1 = ,
+                         methylationData2 = ,
+                         regions = NULL,
+                         context = sub("p", "", args$context),
+                         method = "bins",
+                         binSize = 100,
+                         test = "fisher",
+                         pValueThreshold = 0.01,
+                         minCytosinesCount = 4,
+                         minProportionDifference = minProportionDifference_context,
+                         minGap = 200,
+                         minSize = 50,
+                         minReadsPerCytosine = 4,
+                         cores = 1)
+
+# Compute DMRs using "bins" method
 DMRsReplicates_bins <- computeDMRsReplicates(methylationData = joined_Reps,
                                              condition = joined_Reps_conditions,
                                              regions = NULL,
@@ -128,7 +152,24 @@ DMRsReplicates_bins <- computeDMRsReplicates(methylationData = joined_Reps,
                                              minGap = 200,
                                              minSize = 50,
                                              minReadsPerCytosine = 4,
-                                             cores = 24)
+                                             cores = 1)
+
+DMRsReplicates_bins <- computeDMRsReplicates(methylationData = methylationData,
+                                             condition = c("WT", "WT", "mut", "mut"),
+                                             regions = NULL,
+                                             context = "CHH",
+                                             method = "bins",
+                                             binSize = 100,
+                                             test = "betareg",
+                                             pseudocountM = 1,
+                                             pseudocountN = 2,
+                                             pValueThreshold = 0.01,
+                                             minCytosinesCount = 4,
+                                             minProportionDifference = 0.1,
+                                             minGap = 200,
+                                             minSize = 50,
+                                             minReadsPerCytosine = 4,
+                                             cores = 1)
 
 ## Compute DMRs using "neighbourhood" method
 #DMRsReplicates_neighbourhood <- computeDMRsReplicates(methylationData = joined_Reps,
