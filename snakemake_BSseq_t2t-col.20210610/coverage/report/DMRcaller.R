@@ -174,6 +174,27 @@ if(length(condition2_Reps) == 1) {
                 cores = detectCores()) 
   })
 
+  hypoDMRs_per_Rep_list_bins <- lapply(seq_along(DMRs_per_Rep_list_bins), function(x) {
+    DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "loss"]
+  })
+
+  hyperDMRs_per_Rep_list_bins <- lapply(seq_along(DMRs_per_Rep_list_bins), function(x) {
+    DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "gain"]
+  })
+
+  hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap <- lapply(2:length(hypoDMRs_per_Rep_list_bins), function(x) {
+    findOverlaps(query = hypoDMRs_per_Rep_list_bins[[1]],
+                 subject = hypoDMRs_per_Rep_list_bins[[x]],
+                 type = "equal", select = "all",
+                 ignore.strand = FALSE)
+  })
+  
+  hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap_queryHits <- lapply(seq_along(hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap), function(x) {
+    queryHits(hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap[[x]])
+  })
+
+  
+
   DMRs_Rep1_bins_DMRs_Repx_bins_overlap <- lapply(seq_along(length(DMRs_per_Rep_list_bins), function(x) {
     findOverlaps(query = DMRs_per_Rep_list_bins[[1]],
                  subject = DMRs_per_Rep_list_bins[[x]],
@@ -181,70 +202,64 @@ if(length(condition2_Reps) == 1) {
                  ignore.strand = FALSE)
   })
 
-stopifnot( length( findOverlaps(query = ranLocAcc1GR,
-                                subject = genomeMaskGR,
-                                type = "any", select = "all",
-                                ignore.strand = TRUE) ) == 0 )
-
-    
-
-} else {
-  # For biological replicate analysis using computeDMRsReplicates:
-  # (Note that this requires equal numbers of replicates for each condition,
-  # or > 1 replicate for each condition. If this is not the case,
-  # computeDMRsReplicates fails with an error message:
-  # "Error in apply(readsM2, 1, sum) : dim(X) must have a positive length")
-  conditions_Reps_list <- c(condition1_Reps, condition2_Reps)
-  
-  # Combine replicates into a single GRanges object containing
-  # data for each condition and replicate
-  joined_Reps <- joinReplicates(methylationData1 = conditions_Reps_list[[1]],
-                                methylationData2 = conditions_Reps_list[[2]],
-                                usecomplete = FALSE)
-  for(x in 3:length(conditions_Reps_list)) {
-    joined_Reps <- joinReplicates(methylationData1 = joined_Reps,
-                                  methylationData2 = conditions_Reps_list[[x]]) 
-  }
-  
-  ## Get ranges corresponding to the given context
-  #joined_Reps <- joined_Reps[joined_Reps$context == sub("p", "", args$context)]
-  #
-  ## Get ranges corresponding to those in chrName
-  ##joined_Reps <- joined_Reps[seqnames(joined_Reps) %in% args$chrName]
-  #joined_Reps <- keepSeqlevels(joined_Reps, args$chrName, pruning.mode="coarse")
-  #
-  ## Sort by seqnames, start and end
-  #joined_Reps <- sortSeqlevels(joined_Reps)
-  #joined_Reps <- sort(joined_Reps, ignore.strand = TRUE)
-  #
-  #print(joined_Reps)
-  
-  
-  # Create condition vector
-  joined_Reps_conditions <- gsub("_.+", "", c(args$condition1, args$condition2))
-  
-  print("joined_Reps conditions:")
-  print(joined_Reps_conditions)
-  
-  # Compute DMRs using "bins" method
-  DMRsReplicates_bins <- computeDMRsReplicates(methylationData = joined_Reps,
-                                               condition = joined_Reps_conditions,
-                                               regions = NULL,
-                                               context = sub("p", "", args$context),
-                                               method = "bins",
-                                               binSize = 100,
-                                               test = "betareg",
-                                               pseudocountM = 1,
-                                               pseudocountN = 2,
-                                               pValueThreshold = 0.01,
-                                               minCytosinesCount = 4,
-                                               minProportionDifference = minProportionDifference_context,
-                                               minGap = 200,
-                                               minSize = 50,
-                                               minReadsPerCytosine = 4,
-                                               cores = 1)
-  
 }
+#} else {
+#  # For biological replicate analysis using computeDMRsReplicates:
+#  # (Note that this requires equal numbers of replicates for each condition,
+#  # or > 1 replicate for each condition. If this is not the case,
+#  # computeDMRsReplicates fails with an error message:
+#  # "Error in apply(readsM2, 1, sum) : dim(X) must have a positive length")
+#  conditions_Reps_list <- c(condition1_Reps, condition2_Reps)
+#  
+#  # Combine replicates into a single GRanges object containing
+#  # data for each condition and replicate
+#  joined_Reps <- joinReplicates(methylationData1 = conditions_Reps_list[[1]],
+#                                methylationData2 = conditions_Reps_list[[2]],
+#                                usecomplete = FALSE)
+#  for(x in 3:length(conditions_Reps_list)) {
+#    joined_Reps <- joinReplicates(methylationData1 = joined_Reps,
+#                                  methylationData2 = conditions_Reps_list[[x]]) 
+#  }
+#  
+#  ## Get ranges corresponding to the given context
+#  #joined_Reps <- joined_Reps[joined_Reps$context == sub("p", "", args$context)]
+#  #
+#  ## Get ranges corresponding to those in chrName
+#  ##joined_Reps <- joined_Reps[seqnames(joined_Reps) %in% args$chrName]
+#  #joined_Reps <- keepSeqlevels(joined_Reps, args$chrName, pruning.mode="coarse")
+#  #
+#  ## Sort by seqnames, start and end
+#  #joined_Reps <- sortSeqlevels(joined_Reps)
+#  #joined_Reps <- sort(joined_Reps, ignore.strand = TRUE)
+#  #
+#  #print(joined_Reps)
+#  
+#  
+#  # Create condition vector
+#  joined_Reps_conditions <- gsub("_.+", "", c(args$condition1, args$condition2))
+#  
+#  print("joined_Reps conditions:")
+#  print(joined_Reps_conditions)
+#  
+#  # Compute DMRs using "bins" method
+#  DMRsReplicates_bins <- computeDMRsReplicates(methylationData = joined_Reps,
+#                                               condition = joined_Reps_conditions,
+#                                               regions = NULL,
+#                                               context = sub("p", "", args$context),
+#                                               method = "bins",
+#                                               binSize = 100,
+#                                               test = "betareg",
+#                                               pseudocountM = 1,
+#                                               pseudocountN = 2,
+#                                               pValueThreshold = 0.01,
+#                                               minCytosinesCount = 4,
+#                                               minProportionDifference = minProportionDifference_context,
+#                                               minGap = 200,
+#                                               minSize = 50,
+#                                               minReadsPerCytosine = 4,
+#                                               cores = 1)
+#  
+#}
 
 
 ## For pooled-replicate analysis
