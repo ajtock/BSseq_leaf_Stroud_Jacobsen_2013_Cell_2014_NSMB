@@ -5,13 +5,13 @@
 
 
 # Usage:
-# conda activate python
-# ./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' \
+# source activate python
+# ./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' \
 #               --condition2 'cmt3_BSseq_Rep1' \
 #               --refbase 't2t-col.20210610' \
 #               --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
 #               --context 'CHG'
-# conda deactivate
+# source deactivate
 
 library(argparse)
 library(DMRcaller)
@@ -23,8 +23,8 @@ parser <- ArgumentParser()
 
 # Specify arguments
 # ArgumentParser will add a help option by default
-parser$add_argument("--condition1", type = "character", default = "WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013",
-                    help="Sample replicate prefixes for first condition for inclusion in DMRcaller contrast. Default: %(default)s")
+parser$add_argument("--condition1", type = "character",
+                    help="Sample replicate prefixes for first condition for inclusion in DMRcaller contrast.")
 parser$add_argument("--condition2", type = "character",
                     help="Sample replicate prefixes for second condition for inclusion in DMRcaller contrast.")
 parser$add_argument("--refbase", type = "character", default = "t2t-col.20210610",
@@ -39,8 +39,8 @@ args <- parser$parse_args()
 args_file <- "tempArgsObjectFile.rds"
 #saveRDS(args, args_file); print(args)
 
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' --context CHG")
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --context CHG")
 
 args <- readRDS(args_file)
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
@@ -126,6 +126,35 @@ for(x in 1:length(condition2_Reps)) {
   print(paste0("<<", x))
 }
 
+# Define output directories
+hypoDMRdir <- "DMRcaller/hypoDMRs/"
+hyperDMRdir <- "DMRcaller/hyperDMRs/"
+system(paste0("[ -d ", hypoDMRdir, " ] || mkdir -p ", hypoDMRdir))
+system(paste0("[ -d ", hyperDMRdir, " ] || mkdir -p ", hyperDMRdir))
+
+# Genomic definitions
+fai <- read.table("/home/ajt200/analysis/nanopore/t2t-col.20210610/t2t-col.20210610.fa.fai", header = F)
+chrs <- fai$V1[which(fai$V1 %in% args$chrName)]
+chrLens <- fai$V2[which(fai$V1 %in% args$chrName)]
+genomeRegionGR <- GRanges(seqnames = chrs,
+                          ranges = IRanges(start = rep(1, length(chrs)),
+                                           end = chrLens),
+                          strand = "*")
+
+CENstart <- c(14841110,3823792,13597188,4203902,11784131)[which(fai$V1 %in% args$chrName)]
+CENend <- c(17559778,6045243,15733925,6977949,14551809)[which(fai$V1 %in% args$chrName)]
+CENGR <- GRanges(seqnames = chrs,
+                 ranges = IRanges(start = CENstart,
+                                  end = CENend),
+                 strand = "*")
+nonCENGR <- GRanges(seqnames = rep(chrs, 2),
+                    ranges = IRanges(start = c(rep(1, length(chrs)),
+                                               CENend+1),
+                                     end = c(CENstart-1,
+                                             chrLens)),
+                    strand = "*")
+
+
 
 if(length(condition2_Reps) == 1) {
 
@@ -159,7 +188,7 @@ if(length(condition2_Reps) == 1) {
   # Compute DMRs using "bins" method
   DMRs_per_Rep_list_bins <- lapply(seq_along(condition1_Reps), function(x) {
     computeDMRs(methylationData1 = condition1_Reps[[x]],
-                methylationData2 = condition2_Reps[[1]] ,
+                methylationData2 = condition2_Reps[[1]],
                 regions = NULL,
                 context = sub("p", "", args$context),
                 method = "bins",
@@ -168,41 +197,142 @@ if(length(condition2_Reps) == 1) {
                 pValueThreshold = 0.01,
                 minCytosinesCount = 4,
                 minProportionDifference = minProportionDifference_context,
-                minGap = 200,
+                minGap = 0,
                 minSize = 50,
                 minReadsPerCytosine = 4,
                 cores = detectCores()) 
   })
 
   hypoDMRs_per_Rep_list_bins <- lapply(seq_along(DMRs_per_Rep_list_bins), function(x) {
-    DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "loss"]
+    unique(DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "loss"])
   })
 
   hyperDMRs_per_Rep_list_bins <- lapply(seq_along(DMRs_per_Rep_list_bins), function(x) {
-    DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "gain"]
+    unique(DMRs_per_Rep_list_bins[[x]][DMRs_per_Rep_list_bins[[x]]$regionType == "gain"])
   })
 
-  hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap <- lapply(2:length(hypoDMRs_per_Rep_list_bins), function(x) {
-    findOverlaps(query = hypoDMRs_per_Rep_list_bins[[1]],
-                 subject = hypoDMRs_per_Rep_list_bins[[x]],
-                 type = "equal", select = "all",
-                 ignore.strand = FALSE)
-  })
+  hypoDMRs_allReps_bins <- hypoDMRs_per_Rep_list_bins[[1]]
+  for(x in 2:length(hypoDMRs_per_Rep_list_bins)) {
+    hits <- findOverlaps(query = hypoDMRs_allReps_bins,
+                         subject = hypoDMRs_per_Rep_list_bins[[x]],
+                         type = "equal", select = "all",
+                         ignore.strand = FALSE)
+    hypoDMRs_allReps_bins <- hypoDMRs_allReps_bins[unique(queryHits(hits))]
+  }
   
-  hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap_queryHits <- lapply(seq_along(hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap), function(x) {
-    queryHits(hypoDMRs_Rep1_bins_hypoDMRs_Repx_bins_overlap[[x]])
-  })
+  hypoDMRs_allReps_bins <- mergeDMRsIteratively(DMRs = hypoDMRs_allReps_bins,
+                                                minGap = 200,
+                                                respectSigns = TRUE,
+                                                methylationData1 = condition1_Reps[[1]],
+                                                methylationData2 = condition2_Reps[[1]],
+                                                context = sub("p", "", args$context),
+                                                minProportionDifference = minProportionDifference_context,
+                                                minReadsPerCytosine = 4,
+                                                pValueThreshold = 0.01,
+                                                test = "fisher",
+                                                alternative = "two.sided",
+                                                cores = detectCores()) 
+  hypoDMRs_allReps_bins <- unique(hypoDMRs_allReps_bins)
 
+  # Get centromeric and non-centromeric DMRs
+  hypoDMRs_allReps_bins_CEN_hits <- findOverlaps(query = CENGR,
+                                                 subject = hypoDMRs_allReps_bins,
+                                                 type = "any", select = "all",
+                                                 ignore.strand = TRUE)
+
+  hypoDMRs_allReps_bins_CEN <- hypoDMRs_allReps_bins[unique(subjectHits(hypoDMRs_allReps_bins_CEN_hits))]
+
+  if(length(hypoDMRs_allReps_bins_CEN_hits) > 0) {
+    hypoDMRs_allReps_bins_nonCEN <- hypoDMRs_allReps_bins[-subjectHits(hypoDMRs_allReps_bins_CEN_hits)]
+  } else {
+    hypoDMRs_allReps_bins_nonCEN <- hypoDMRs_allReps_bins
+  }
+
+  stopifnot(length(hypoDMRs_allReps_bins_CEN) + length(hypoDMRs_allReps_bins_nonCEN) == length(hypoDMRs_allReps_bins))
+
+  # Sort by seqnames, start and end
+  hypoDMRs_allReps_bins <- sortSeqlevels(hypoDMRs_allReps_bins)
+  hypoDMRs_allReps_bins <- sort(hypoDMRs_allReps_bins, ignore.strand = TRUE)
+
+  hypoDMRs_allReps_bins_CEN <- sortSeqlevels(hypoDMRs_allReps_bins_CEN)
+  hypoDMRs_allReps_bins_CEN <- sort(hypoDMRs_allReps_bins_CEN, ignore.strand = TRUE)
+
+  hypoDMRs_allReps_bins_nonCEN <- sortSeqlevels(hypoDMRs_allReps_bins_nonCEN)
+  hypoDMRs_allReps_bins_nonCEN <- sort(hypoDMRs_allReps_bins_nonCEN, ignore.strand = TRUE)
+
+  # Export DMR GRanges as annotation files
+  rtracklayer::export(object = hypoDMRs_allReps_bins,
+                      con = paste0(hypoDMRdir,
+                                   paste0(args$condition2, collapse = "_"),
+                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                                   "_All_", paste0(args$chrName, collapse = "_"), ".gff3"))
+  hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
+                                          start = as.integer(start(hypoDMRs_allReps_bins)-1),
+                                          end = as.integer(end(hypoDMRs_allReps_bins)),
+                                          name = as.integer(1:length(hypoDMRs_allReps_bins)),
+                                          score = as.numeric(1-(hypoDMRs_allReps_bins$proportion2/hypoDMRs_allReps_bins$proportion1)),
+                                          strand = as.character(strand(hypoDMRs_allReps_bins)),
+                                          stringsAsFactors = FALSE)
+  write.table(hypoDMRs_allReps_bins_bed,
+              file = paste0(hypoDMRdir,
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_All_", paste0(args$chrName, collapse = "_"), ".bed"),
+              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+
+
+
+  # Define random loci of the same number and width distribution,
+  # and in the same per-feature genomeRegionGR as featuresAcc1_orthoGR
   
+  # Define function to select randomly positioned loci of the same
+  # width distribution as featuresAcc1_orthoGR
+  ranLocStartSelect <- function(coordinates, n) {
+    sample(x = coordinates,
+           size = n,
+           replace = FALSE)
+  }
+  
+  # Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
+  options(scipen = 100)
+  
+  # Apply ranLocStartSelect() on a per-chromosome basis so that
+  # ranLocAcc1GR contains the same number of loci per chromosome as featuresAcc1_orthoGR
+  chrs <- seqlevels(sortSeqlevels(featuresAcc1_orthoGR))
+  ranLocAcc1GR <- GRanges()
+  for(i in 1:length(chrs)) {
+    featuresAcc1_orthoChrGR <- featuresAcc1_orthoGR[seqnames(featuresAcc1_orthoGR) == chrs[i]]
+    genomeRegionChrGR <- genomeRegionGR[seqnames(genomeRegionGR) == chrs[i]]
+    # Contract genomeRegionChrGR so that random loci and 2-kb flanking regions
+    # do not extend beyond chromosome ends
+    end(genomeRegionChrGR) <- end(genomeRegionChrGR)-max(width(featuresAcc1_orthoChrGR))-2000
+    start(genomeRegionChrGR) <- start(genomeRegionChrGR)+2000
+    # Define seed so that random selections are reproducible
+    set.seed(93750174)
+    ranLocAcc1ChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(genomeRegionChrGR), function(x) {
+                                                                       start(genomeRegionChrGR[x]) : end(genomeRegionChrGR[x])
+                                                                     })),
+                                                n = length(featuresAcc1_orthoChrGR))
+    ranLocAcc1ChrGR <- GRanges(seqnames = chrs[i],
+                               ranges = IRanges(start = ranLocAcc1ChrStart,
+                                                width = width(featuresAcc1_orthoChrGR)),
+                               strand = strand(featuresAcc1_orthoChrGR),
+                               Col_featureID = featuresAcc1_orthoChrGR$featureID)
+    ranLocAcc1GR <- append(ranLocAcc1GR, ranLocAcc1ChrGR)
+  }
+  ranLocAcc1GR <- sort(ranLocAcc1GR, by = ~ Col_featureID)
+  stopifnot( identical( as.character(seqnames(featuresAcc1_orthoGR)),
+                        as.character(seqnames(ranLocAcc1GR)) ) )
+  stopifnot( length( findOverlaps(query = ranLocAcc1GR,
+                                  subject = genomeMaskGR,
+                                  type = "any", select = "all",
+                                  ignore.strand = TRUE) ) == 0 )
 
-  DMRs_Rep1_bins_DMRs_Repx_bins_overlap <- lapply(seq_along(length(DMRs_per_Rep_list_bins), function(x) {
-    findOverlaps(query = DMRs_per_Rep_list_bins[[1]],
-                 subject = DMRs_per_Rep_list_bins[[x]],
-                 type = "any", select = "all",
-                 ignore.strand = FALSE)
-  })
 
 }
+
 #} else {
 #  # For biological replicate analysis using computeDMRsReplicates:
 #  # (Note that this requires equal numbers of replicates for each condition,
@@ -260,8 +390,8 @@ if(length(condition2_Reps) == 1) {
 #                                               cores = 1)
 #  
 #}
-
-
+#
+#
 ## For pooled-replicate analysis
 #condition1_Reps_pooled <- poolMethylationDatasets(GRangesList(condition1_Reps))
 #condition2_Reps_pooled <- poolMethylationDatasets(GRangesList(condition2_Reps))
