@@ -261,6 +261,7 @@ if(length(condition2_Reps) == 1) {
   hypoDMRs_allReps_bins_nonCEN <- sort(hypoDMRs_allReps_bins_nonCEN, ignore.strand = TRUE)
 
   # Export DMR GRanges as annotation files
+  # All
   rtracklayer::export(object = hypoDMRs_allReps_bins,
                       con = paste0(hypoDMRdir,
                                    paste0(args$condition2, collapse = "_"),
@@ -282,6 +283,49 @@ if(length(condition2_Reps) == 1) {
                             "_All_", paste0(args$chrName, collapse = "_"), ".bed"),
               quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
+  # CEN
+  rtracklayer::export(object = hypoDMRs_allReps_bins_CEN,
+                      con = paste0(hypoDMRdir,
+                                   paste0(args$condition2, collapse = "_"),
+                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                                   "_CEN_", paste0(args$chrName, collapse = "_"), ".gff3"))
+  hypoDMRs_allReps_bins_CEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_CEN)),
+                                              start = as.integer(start(hypoDMRs_allReps_bins_CEN)-1),
+                                              end = as.integer(end(hypoDMRs_allReps_bins_CEN)),
+                                              name = as.integer(1:length(hypoDMRs_allReps_bins_CEN)),
+                                              score = as.numeric(1-(hypoDMRs_allReps_bins_CEN$proportion2/hypoDMRs_allReps_bins_CEN$proportion1)),
+                                              strand = as.character(strand(hypoDMRs_allReps_bins_CEN)),
+                                              stringsAsFactors = FALSE)
+  write.table(hypoDMRs_allReps_bins_CEN_bed,
+              file = paste0(hypoDMRdir,
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_CEN_", paste0(args$chrName, collapse = "_"), ".bed"),
+              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+
+  # nonCEN
+  rtracklayer::export(object = hypoDMRs_allReps_bins_nonCEN,
+                      con = paste0(hypoDMRdir,
+                                   paste0(args$condition2, collapse = "_"),
+                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                                   "_nonCEN_", paste0(args$chrName, collapse = "_"), ".gff3"))
+  hypoDMRs_allReps_bins_nonCEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_nonCEN)),
+                                                 start = as.integer(start(hypoDMRs_allReps_bins_nonCEN)-1),
+                                                 end = as.integer(end(hypoDMRs_allReps_bins_nonCEN)),
+                                                 name = as.integer(1:length(hypoDMRs_allReps_bins_nonCEN)),
+                                                 score = as.numeric(1-(hypoDMRs_allReps_bins_nonCEN$proportion2/hypoDMRs_allReps_bins_nonCEN$proportion1)),
+                                                 strand = as.character(strand(hypoDMRs_allReps_bins_nonCEN)),
+                                                 stringsAsFactors = FALSE)
+  write.table(hypoDMRs_allReps_bins_nonCEN_bed,
+              file = paste0(hypoDMRdir,
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_nonCEN_", paste0(args$chrName, collapse = "_"), ".bed"),
+              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
   # Define random loci of the same number and width distribution,
