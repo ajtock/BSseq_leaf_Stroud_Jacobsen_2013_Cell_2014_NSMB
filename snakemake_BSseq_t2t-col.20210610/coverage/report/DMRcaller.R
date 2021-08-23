@@ -41,13 +41,12 @@ parser$add_argument("--context", type = "character",
 
 # parse arguments
 args <- parser$parse_args()
+
 #args_file <- "tempArgsObjectFile.rds"
 #saveRDS(args, args_file); print(args)
-
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' 'genomewide' --quantiles 6 --context CHG")
 #system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion genomewide --quantiles 6 --context CHG")
-
 #args <- readRDS(args_file)
+
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
 args$condition2 <- unlist(strsplit(args$condition2, split = ","))
 args$chrName <- unlist(strsplit(args$chrName, split = ","))
