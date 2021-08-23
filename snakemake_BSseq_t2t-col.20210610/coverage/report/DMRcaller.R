@@ -319,6 +319,10 @@ if(length(condition2_Reps) == 1) {
   hypoDMRs_allReps_bins <- sortSeqlevels(hypoDMRs_allReps_bins)
   hypoDMRs_allReps_bins <- sort(hypoDMRs_allReps_bins, ignore.strand = TRUE)
 
+  # Create new columns containing absolute and fold change in args$context methylation proportion
+  hypoDMRs_allReps_bins$absolute_change <- as.numeric(hypoDMRs_allReps_bins$proportion1 - hypoDMRs_allReps_bins$proportion2)
+  hypoDMRs_allReps_bins$fold_change <- as.numeric(1- hypoDMRs_allReps_bins$proportion1 - hypoDMRs_allReps_bins$proportion2)
+
 #  # Export DMR GRanges as annotation files
 #  rtracklayer::export(object = hypoDMRs_allReps_bins,
 #                      con = paste0(hypoDMRdir,
