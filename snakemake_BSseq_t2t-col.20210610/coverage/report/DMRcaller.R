@@ -139,9 +139,6 @@ fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", a
 chrs <- fai$V1[which(fai$V1 %in% args$chrName)]
 chrLens <- fai$V2[which(fai$V1 %in% args$chrName)]
 
-CENstart <- c(14841110,3823792,13597188,4203902,11784131)[which(fai$V1 %in% args$chrName)]
-CENend <- c(17559778,6045243,15733925,6977949,14551809)[which(fai$V1 %in% args$chrName)]
-
 CEN <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", args$refbase, ".fa.centromeres"), header = T)
 CEN <- CEN[which(fai$V1 %in% args$chrName),]
 # Not sure Dan defined pericentromeres at 10-kb resolution (appear to be at 100-kb resolution)
@@ -302,105 +299,54 @@ if(length(condition2_Reps) == 1) {
                                                 cores = detectCores()) 
   hypoDMRs_allReps_bins <- unique(hypoDMRs_allReps_bins)
 
-  # Get centromeric and non-centromeric DMRs
-  hypoDMRs_allReps_bins_CEN_hits <- findOverlaps(query = CENGR,
-                                                 subject = hypoDMRs_allReps_bins,
-                                                 type = "any", select = "all",
-                                                 ignore.strand = TRUE)
-
-  hypoDMRs_allReps_bins_CEN <- hypoDMRs_allReps_bins[unique(subjectHits(hypoDMRs_allReps_bins_CEN_hits))]
-
-  if(length(hypoDMRs_allReps_bins_CEN_hits) > 0) {
-    hypoDMRs_allReps_bins_nonCEN <- hypoDMRs_allReps_bins[-subjectHits(hypoDMRs_allReps_bins_CEN_hits)]
-  } else {
-    hypoDMRs_allReps_bins_nonCEN <- hypoDMRs_allReps_bins
+  # Get args$genomeRegion DMRs
+  hypoDMRs_allReps_bins_genomeRegion_hits <- findOverlaps(query = genomeRegionGR,
+                                                          subject = hypoDMRs_allReps_bins,
+                                                          type = "any", select = "all",
+                                                          ignore.strand = TRUE)
+  hypoDMRs_allReps_bins <- hypoDMRs_allReps_bins[unique(subjectHits(hypoDMRs_allReps_bins_genomeRegion_hits))]
+  if(args$genomeRegion %in% c("nonCEN", "arm")) {
+    hypoDMRs_allReps_bins_genomeMask_hits <- findOverlaps(query = genomeMaskGR,
+                                                          subject = hypoDMRs_allReps_bins,
+                                                          type = "any", select = "all",
+                                                          ignore.strand = TRUE)
+    if(length(hypoDMRs_allReps_bins_genomeMask_hits) > 0) {
+      hypoDMRs_allReps_bins <- hypoDMRs_allReps_bins[-subjectHits(hypoDMRs_allReps_bins_genomeMask_hits)]
+    }
   }
-
-  stopifnot(length(hypoDMRs_allReps_bins_CEN) + length(hypoDMRs_allReps_bins_nonCEN) == length(hypoDMRs_allReps_bins))
 
   # Sort by seqnames, start and end
   hypoDMRs_allReps_bins <- sortSeqlevels(hypoDMRs_allReps_bins)
   hypoDMRs_allReps_bins <- sort(hypoDMRs_allReps_bins, ignore.strand = TRUE)
 
-  hypoDMRs_allReps_bins_CEN <- sortSeqlevels(hypoDMRs_allReps_bins_CEN)
-  hypoDMRs_allReps_bins_CEN <- sort(hypoDMRs_allReps_bins_CEN, ignore.strand = TRUE)
-
-  hypoDMRs_allReps_bins_nonCEN <- sortSeqlevels(hypoDMRs_allReps_bins_nonCEN)
-  hypoDMRs_allReps_bins_nonCEN <- sort(hypoDMRs_allReps_bins_nonCEN, ignore.strand = TRUE)
-
-  # Export DMR GRanges as annotation files
-  # All
-  rtracklayer::export(object = hypoDMRs_allReps_bins,
-                      con = paste0(hypoDMRdir,
-                                   paste0(args$condition2, collapse = "_"),
-                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                   "_", paste0(args$chrName, collapse = "_"), ".gff3"))
-  hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
-                                          start = as.integer(start(hypoDMRs_allReps_bins)-1),
-                                          end = as.integer(end(hypoDMRs_allReps_bins)),
-                                          name = as.integer(1:length(hypoDMRs_allReps_bins)),
-                                          score = as.numeric(1-(hypoDMRs_allReps_bins$proportion2/hypoDMRs_allReps_bins$proportion1)),
-                                          strand = as.character(strand(hypoDMRs_allReps_bins)),
-                                          stringsAsFactors = FALSE)
-  write.table(hypoDMRs_allReps_bins_bed,
-              file = paste0(hypoDMRdir,
-                            paste0(args$condition2, collapse = "_"),
-                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), ".bed"),
-              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
-
-  # CEN
-  rtracklayer::export(object = hypoDMRs_allReps_bins_CEN,
-                      con = paste0(hypoDMRdir,
-                                   paste0(args$condition2, collapse = "_"),
-                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                   "_CEN_", paste0(args$chrName, collapse = "_"), ".gff3"))
-  hypoDMRs_allReps_bins_CEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_CEN)),
-                                              start = as.integer(start(hypoDMRs_allReps_bins_CEN)-1),
-                                              end = as.integer(end(hypoDMRs_allReps_bins_CEN)),
-                                              name = as.integer(1:length(hypoDMRs_allReps_bins_CEN)),
-                                              score = as.numeric(1-(hypoDMRs_allReps_bins_CEN$proportion2/hypoDMRs_allReps_bins_CEN$proportion1)),
-                                              strand = as.character(strand(hypoDMRs_allReps_bins_CEN)),
-                                              stringsAsFactors = FALSE)
-  write.table(hypoDMRs_allReps_bins_CEN_bed,
-              file = paste0(hypoDMRdir,
-                            paste0(args$condition2, collapse = "_"),
-                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_CEN_", paste0(args$chrName, collapse = "_"), ".bed"),
-              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
-
-  # nonCEN
-  rtracklayer::export(object = hypoDMRs_allReps_bins_nonCEN,
-                      con = paste0(hypoDMRdir,
-                                   paste0(args$condition2, collapse = "_"),
-                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                   "_nonCEN_", paste0(args$chrName, collapse = "_"), ".gff3"))
-  hypoDMRs_allReps_bins_nonCEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_nonCEN)),
-                                                 start = as.integer(start(hypoDMRs_allReps_bins_nonCEN)-1),
-                                                 end = as.integer(end(hypoDMRs_allReps_bins_nonCEN)),
-                                                 name = as.integer(1:length(hypoDMRs_allReps_bins_nonCEN)),
-                                                 score = as.numeric(1-(hypoDMRs_allReps_bins_nonCEN$proportion2/hypoDMRs_allReps_bins_nonCEN$proportion1)),
-                                                 strand = as.character(strand(hypoDMRs_allReps_bins_nonCEN)),
-                                                 stringsAsFactors = FALSE)
-  write.table(hypoDMRs_allReps_bins_nonCEN_bed,
-              file = paste0(hypoDMRdir,
-                            paste0(args$condition2, collapse = "_"),
-                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_nonCEN_", paste0(args$chrName, collapse = "_"), ".bed"),
-              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+#  # Export DMR GRanges as annotation files
+#  rtracklayer::export(object = hypoDMRs_allReps_bins,
+#                      con = paste0(hypoDMRdir,
+#                                   paste0(args$condition2, collapse = "_"),
+#                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+#                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+#                                   "_", paste0(args$chrName, collapse = "_"), args$genomeRegion, ".gff3"))
+#  hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
+#                                          start = as.integer(start(hypoDMRs_allReps_bins)-1),
+#                                          end = as.integer(end(hypoDMRs_allReps_bins)),
+#                                          name = as.integer(1:length(hypoDMRs_allReps_bins)),
+#                                          score = as.numeric(1-(hypoDMRs_allReps_bins$proportion2/hypoDMRs_allReps_bins$proportion1)),
+#                                          strand = as.character(strand(hypoDMRs_allReps_bins)),
+#                                          stringsAsFactors = FALSE)
+#  write.table(hypoDMRs_allReps_bins_bed,
+#              file = paste0(hypoDMRdir,
+#                            paste0(args$condition2, collapse = "_"),
+#                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+#                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+#                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".bed"),
+#              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
   # Define random loci of the same number and width distribution,
-  # and in the same per-feature genomeRegionGR as featuresAcc1_orthoGR
+  # and in the same per-feature genomeRegionGR as hypoDMRs_allReps_bins
   
   # Define function to select randomly positioned loci of the same
-  # width distribution as featuresAcc1_orthoGR
+  # width distribution as hypoDMRs_allReps_bins
   ranLocStartSelect <- function(coordinates, n) {
     sample(x = coordinates,
            size = n,
@@ -411,33 +357,29 @@ if(length(condition2_Reps) == 1) {
   options(scipen = 100)
   
   # Apply ranLocStartSelect() on a per-chromosome basis so that
-  # ranLocAcc1GR contains the same number of loci per chromosome as featuresAcc1_orthoGR
-  chrs <- seqlevels(sortSeqlevels(featuresAcc1_orthoGR))
-  ranLocAcc1GR <- GRanges()
+  # ranLocGR contains the same number of loci per chromosome as hypoDMRs_allReps_bins
+  chrs <- seqlevels(sortSeqlevels(hypoDMRs_allReps_bins))
+  ranLocGR <- GRanges()
   for(i in 1:length(chrs)) {
-    featuresAcc1_orthoChrGR <- featuresAcc1_orthoGR[seqnames(featuresAcc1_orthoGR) == chrs[i]]
+    hypoDMRs_allReps_binsChrGR <- hypoDMRs_allReps_bins[seqnames(hypoDMRs_allReps_bins) == chrs[i]]
     genomeRegionChrGR <- genomeRegionGR[seqnames(genomeRegionGR) == chrs[i]]
     # Contract genomeRegionChrGR so that random loci and 2-kb flanking regions
     # do not extend beyond chromosome ends
-    end(genomeRegionChrGR) <- end(genomeRegionChrGR)-max(width(featuresAcc1_orthoChrGR))-2000
+    end(genomeRegionChrGR) <- end(genomeRegionChrGR)-max(width(hypoDMRs_allReps_binsChrGR))-2000
     start(genomeRegionChrGR) <- start(genomeRegionChrGR)+2000
     # Define seed so that random selections are reproducible
     set.seed(93750174)
-    ranLocAcc1ChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(genomeRegionChrGR), function(x) {
-                                                                       start(genomeRegionChrGR[x]) : end(genomeRegionChrGR[x])
-                                                                     })),
-                                                n = length(featuresAcc1_orthoChrGR))
-    ranLocAcc1ChrGR <- GRanges(seqnames = chrs[i],
-                               ranges = IRanges(start = ranLocAcc1ChrStart,
-                                                width = width(featuresAcc1_orthoChrGR)),
-                               strand = strand(featuresAcc1_orthoChrGR),
-                               Col_featureID = featuresAcc1_orthoChrGR$featureID)
-    ranLocAcc1GR <- append(ranLocAcc1GR, ranLocAcc1ChrGR)
+    ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(genomeRegionChrGR), function(x) {
+                                                               start(genomeRegionChrGR[x]) : end(genomeRegionChrGR[x])
+                                                             })),
+                                        n = length(hypoDMRs_allReps_binsChrGR))
+    ranLocChrGR <- GRanges(seqnames = chrs[i],
+                           ranges = IRanges(start = ranLocChrStart,
+                                            width = width(hypoDMRs_allReps_binsChrGR)),
+                           strand = strand(hypoDMRs_allReps_binsChrGR))
+    ranLocGR <- append(ranLocGR, ranLocChrGR)
   }
-  ranLocAcc1GR <- sort(ranLocAcc1GR, by = ~ Col_featureID)
-  stopifnot( identical( as.character(seqnames(featuresAcc1_orthoGR)),
-                        as.character(seqnames(ranLocAcc1GR)) ) )
-  stopifnot( length( findOverlaps(query = ranLocAcc1GR,
+  stopifnot( length( findOverlaps(query = ranLocGR,
                                   subject = genomeMaskGR,
                                   type = "any", select = "all",
                                   ignore.strand = TRUE) ) == 0 )
