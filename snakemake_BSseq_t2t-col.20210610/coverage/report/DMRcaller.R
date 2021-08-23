@@ -41,13 +41,13 @@ parser$add_argument("--context", type = "character",
 
 # parse arguments
 args <- parser$parse_args()
-args_file <- "tempArgsObjectFile.rds"
+#args_file <- "tempArgsObjectFile.rds"
 #saveRDS(args, args_file); print(args)
 
 #system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' 'genomewide' --quantiles 6 --context CHG")
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep1_2014,WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion genomewide --quantiles 6 --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion genomewide --quantiles 6 --context CHG")
 
-args <- readRDS(args_file)
+#args <- readRDS(args_file)
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
 args$condition2 <- unlist(strsplit(args$condition2, split = ","))
 args$chrName <- unlist(strsplit(args$chrName, split = ","))
@@ -324,7 +324,7 @@ if(length(condition2_Reps) == 1) {
 
   # Create new columns containing absolute change, log2 fold change, and relative change in args$context methylation proportion
   hypoDMRs_allReps_bins$absolute_change <- as.numeric( hypoDMRs_allReps_bins$proportion1 - hypoDMRs_allReps_bins$proportion2 )
-  # + 0.01 is an offset to prevent infinite log2 fold change (or equal percent change) values where proportions = 0
+  # + 0.01 is an offset to prevent infinite log2 fold change (or equal relative change) values where proportions = 0
   hypoDMRs_allReps_bins$log2_fold_change <- as.numeric( log2( (hypoDMRs_allReps_bins$proportion1 + 0.01) /
                                                               (hypoDMRs_allReps_bins$proportion2 + 0.01) ) )
   hypoDMRs_allReps_bins$relative_change <- as.numeric( 1 - ( (hypoDMRs_allReps_bins$proportion2 + 0.01) /
@@ -345,6 +345,7 @@ if(length(condition2_Reps) == 1) {
   l2fc_quantilesStats <- data.frame()
   rc_quantilesStats <- data.frame()
   for(k in 1:args$quantiles) {
+    # absolute_change (ac)
     # First quantile should span 1 to greater than, e.g., 0.75 proportions of hypoDMRs_allReps_bins
     if(k < args$quantiles) {
        hypoDMRs_allReps_bins[ !is.na(hypoDMRs_allReps_bins$ac_percentile) &
@@ -364,70 +365,118 @@ if(length(condition2_Reps) == 1) {
                              width(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$ac_quantile == paste0("Quantile ", k)]), na.rm = T)),
                            mean_absolute_change = as.numeric(mean(
                              hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$ac_quantile == paste0("Quantile ", k)]$absolute_change, na.rm = T)),
+                           mean_log2_fold_change = as.numeric(mean(
+                             hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$ac_quantile == paste0("Quantile ", k)]$log2_fold_change, na.rm = T)),
+                           mean_relative_change = as.numeric(mean(
+                             hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$ac_quantile == paste0("Quantile ", k)]$relative_change, na.rm = T)),
                            stringsAsFactors = FALSE)
     ac_quantilesStats <- rbind(ac_quantilesStats, ac_stats)
-
-quantilesStats <- data.frame()
-for(k in 1:quantiles) {
-  # First quantile should span 1 to greater than, e.g., 0.75 proportions of featuresAcc2_ortho
-  if(k < quantiles) {
-    featuresAcc2_ortho_DF[ !is.na(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) &
-                           rank(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) /
-                           length(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) <=
-                           1-((k-1)/quantiles) &
-                           rank(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) /
-                           length(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) >
-                           1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
-  } else {
-  # Final quantile should span 0 to, e.g., 0.25 proportions of featuresAcc2_ortho
-    featuresAcc2_ortho_DF[ !is.na(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) &
-                           rank(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) /
-                           length(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) <=
-                           1-((k-1)/quantiles) &
-                           rank(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) /
-                           length(featuresAcc2_ortho_DF[,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")]) >=
-                           1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    # log2_fold_change
+    # First quantile should span 1 to greater than, e.g., 0.75 proportions of hypoDMRs_allReps_bins
+    if(k < args$quantiles) {
+       hypoDMRs_allReps_bins[ !is.na(hypoDMRs_allReps_bins$l2fc_percentile) &
+                              hypoDMRs_allReps_bins$l2fc_percentile <= 1 - ( (k - 1) / args$quantiles ) &
+                              hypoDMRs_allReps_bins$l2fc_percentile > 1 - ( k / args$quantiles ) ]$l2fc_quantile <- paste0("Quantile ", k)
+    } else { 
+    # Final quantile should span 0 to, e.g., 0.25 proportions of hypoDMRs_allReps_bins
+      hypoDMRs_allReps_bins[ !is.na(hypoDMRs_allReps_bins$l2fc_percentile) &
+                             hypoDMRs_allReps_bins$l2fc_percentile <= 1 - ( (k - 1) / args$quantiles ) &
+                             hypoDMRs_allReps_bins$l2fc_percentile >= 1 - ( k / args$quantiles ) ]$l2fc_quantile <- paste0("Quantile ", k)
+    }
+    l2fc_stats <- data.frame(quantile = as.integer(k),
+                             n = as.integer(length(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)])),
+                             mean_width = as.integer(round(mean(
+                               width(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)]), na.rm = T))),
+                             total_width = as.integer(sum(
+                               width(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)]), na.rm = T)),
+                             mean_absolute_change = as.numeric(mean(
+                               hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)]$absolute_change, na.rm = T)),
+                             mean_log2_fold_change = as.numeric(mean(
+                               hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)]$log2_fold_change, na.rm = T)),
+                             mean_relative_change = as.numeric(mean(
+                               hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k)]$relative_change, na.rm = T)),
+                           stringsAsFactors = FALSE)
+    l2fc_quantilesStats <- rbind(l2fc_quantilesStats, l2fc_stats)
+    # relative_change
+    # First quantile should span 1 to greater than, e.g., 0.75 proportions of hypoDMRs_allReps_bins
+    if(k < args$quantiles) {
+       hypoDMRs_allReps_bins[ !is.na(hypoDMRs_allReps_bins$rc_percentile) &
+                              hypoDMRs_allReps_bins$rc_percentile <= 1 - ( (k - 1) / args$quantiles ) &
+                              hypoDMRs_allReps_bins$rc_percentile > 1 - ( k / args$quantiles ) ]$rc_quantile <- paste0("Quantile ", k)
+    } else { 
+    # Final quantile should span 0 to, e.g., 0.25 proportions of hypoDMRs_allReps_bins
+      hypoDMRs_allReps_bins[ !is.na(hypoDMRs_allReps_bins$rc_percentile) &
+                             hypoDMRs_allReps_bins$rc_percentile <= 1 - ( (k - 1) / args$quantiles ) &
+                             hypoDMRs_allReps_bins$rc_percentile >= 1 - ( k / args$quantiles ) ]$rc_quantile <- paste0("Quantile ", k)
+    }
+    rc_stats <- data.frame(quantile = as.integer(k),
+                           n = as.integer(length(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)])),
+                           mean_width = as.integer(round(mean(
+                             width(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)]), na.rm = T))),
+                           total_width = as.integer(sum(
+                             width(hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)]), na.rm = T)),
+                           mean_absolute_change = as.numeric(mean(
+                             hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)]$absolute_change, na.rm = T)),
+                           mean_log2_fold_change = as.numeric(mean(
+                             hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)]$log2_fold_change, na.rm = T)),
+                           mean_relative_change = as.numeric(mean(
+                             hypoDMRs_allReps_bins[hypoDMRs_allReps_bins$rc_quantile == paste0("Quantile ", k)]$relative_change, na.rm = T)),
+                           stringsAsFactors = FALSE)
+    rc_quantilesStats <- rbind(rc_quantilesStats, rc_stats)
   }
-  write.table(featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),],
-              file = paste0(outDir,
-                            "quantile", k, "_of_", quantiles,
-                            "_", genomeRegion, "_by_", varType, "_freq_in_", orderRegion,
-                            "_of_Acc2_Chr_genes_in_", refbase, "_",
-                            paste0(chrName, collapse = "_"), ".tsv"),
+  write.table(ac_quantilesStats,
+              file = paste0(hypoDMRdir,
+                            "summary_", args$quantiles, "quantiles",
+                            "_by_absolute_change_in_",
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
               quote = FALSE, sep = "\t", row.names = FALSE)
-  stats <- data.frame(quantile = as.integer(k),
-                      n = as.integer(dim(featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),])[1]),
-                      mean_width = as.integer(round(mean(
-                        (featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),]$end -
-                         featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),]$start) + 1, na.rm = T))),
-                      total_width = as.integer(sum(
-                        (featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),]$end -
-                         featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),]$start) + 1, na.rm = T)),
-                      mean_orderRegion_variantsPK = as.numeric(mean(featuresAcc2_ortho_DF[featuresAcc2_ortho_DF$quantile == paste0("Quantile ", k),][,which(colnames(featuresAcc2_ortho_DF) == "orderRegion_variantsPK")], na.rm = T)))
-  quantilesStats <- rbind(quantilesStats, stats)
-}
+  write.table(l2fc_quantilesStats,
+              file = paste0(hypoDMRdir,
+                            "summary_", args$quantiles, "quantiles",
+                            "_by_log2_fold_change_in_",
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
+              quote = FALSE, sep = "\t", row.names = FALSE)
+  write.table(rc_quantilesStats,
+              file = paste0(hypoDMRdir,
+                            "summary_", args$quantiles, "quantiles",
+                            "_by_relative_change_in_",
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
+              quote = FALSE, sep = "\t", row.names = FALSE)
 
-#  # Export DMR GRanges as annotation files
-#  rtracklayer::export(object = hypoDMRs_allReps_bins,
-#                      con = paste0(hypoDMRdir,
-#                                   paste0(args$condition2, collapse = "_"),
-#                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-#                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-#                                   "_", paste0(args$chrName, collapse = "_"), args$genomeRegion, ".gff3"))
-#  hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
-#                                          start = as.integer(start(hypoDMRs_allReps_bins)-1),
-#                                          end = as.integer(end(hypoDMRs_allReps_bins)),
-#                                          name = as.integer(1:length(hypoDMRs_allReps_bins)),
-#                                          score = as.numeric(1-(hypoDMRs_allReps_bins$proportion2/hypoDMRs_allReps_bins$proportion1)),
-#                                          strand = as.character(strand(hypoDMRs_allReps_bins)),
-#                                          stringsAsFactors = FALSE)
-#  write.table(hypoDMRs_allReps_bins_bed,
-#              file = paste0(hypoDMRdir,
-#                            paste0(args$condition2, collapse = "_"),
-#                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-#                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-#                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".bed"),
-#              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+  # Export DMR GRanges as annotation files
+  rtracklayer::export(object = hypoDMRs_allReps_bins,
+                      con = paste0(hypoDMRdir,
+                                   "features_", args$quantiles, "quantiles",
+                                   "_by_change_in_",
+                                   paste0(args$condition2, collapse = "_"),
+                                   "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                                   "_", paste0(args$chrName, collapse = "_"), args$genomeRegion, ".gff3"))
+  hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
+                                          start = as.integer(start(hypoDMRs_allReps_bins)-1),
+                                          end = as.integer(end(hypoDMRs_allReps_bins)),
+                                          name = as.integer(1:length(hypoDMRs_allReps_bins)),
+                                          score = as.numeric(hypoDMRs_allReps_bins$log2_fold_change),
+                                          strand = as.character(strand(hypoDMRs_allReps_bins)),
+                                          stringsAsFactors = FALSE)
+  write.table(hypoDMRs_allReps_bins_bed,
+              file = paste0(hypoDMRdir,
+                            "features_", args$quantiles, "quantiles",
+                            "_by_change_in_",
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".bed"),
+              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
   # Define random loci of the same number and width distribution,
@@ -447,7 +496,7 @@ for(k in 1:quantiles) {
   # Apply ranLocStartSelect() on a per-chromosome basis so that
   # ranLocGR contains the same number of loci per chromosome as hypoDMRs_allReps_bins
   chrs <- seqlevels(sortSeqlevels(hypoDMRs_allReps_bins))
-  ranLocGR <- GRanges()
+  hypoDMRs_ranLocGR <- GRanges()
   for(i in 1:length(chrs)) {
     hypoDMRs_allReps_binsChrGR <- hypoDMRs_allReps_bins[seqnames(hypoDMRs_allReps_bins) == chrs[i]]
     genomeRegionChrGR <- genomeRegionGR[seqnames(genomeRegionGR) == chrs[i]]
@@ -457,21 +506,48 @@ for(k in 1:quantiles) {
     start(genomeRegionChrGR) <- start(genomeRegionChrGR)+2000
     # Define seed so that random selections are reproducible
     set.seed(93750174)
-    ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(genomeRegionChrGR), function(x) {
-                                                               start(genomeRegionChrGR[x]) : end(genomeRegionChrGR[x])
-                                                             })),
-                                        n = length(hypoDMRs_allReps_binsChrGR))
-    ranLocChrGR <- GRanges(seqnames = chrs[i],
-                           ranges = IRanges(start = ranLocChrStart,
-                                            width = width(hypoDMRs_allReps_binsChrGR)),
-                           strand = strand(hypoDMRs_allReps_binsChrGR))
-    ranLocGR <- append(ranLocGR, ranLocChrGR)
+    hypoDMRs_ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(genomeRegionChrGR), function(x) {
+                                                                        start(genomeRegionChrGR[x]) : end(genomeRegionChrGR[x])
+                                                                      })),
+                                                 n = length(hypoDMRs_allReps_binsChrGR))
+    hypoDMRs_ranLocChrGR <- GRanges(seqnames = chrs[i],
+                                    ranges = IRanges(start = hypoDMRs_ranLocChrStart,
+                                                     width = width(hypoDMRs_allReps_binsChrGR)),
+                                    strand = strand(hypoDMRs_allReps_binsChrGR))
+    hypoDMRs_ranLocGR <- append(hypoDMRs_ranLocGR, hypoDMRs_ranLocChrGR)
   }
-  stopifnot( length( findOverlaps(query = ranLocGR,
+  stopifnot( length( findOverlaps(query = hypoDMRs_ranLocGR,
                                   subject = genomeMaskGR,
                                   type = "any", select = "all",
                                   ignore.strand = TRUE) ) == 0 )
 
+
+  # Divide hypoDMRs_ranLocGR into quantiles based on hypoDMRs_allReps_bins quantile indices
+  hypoDMRs_ranLocGR$l2fc_random <- as.character("")
+  # Get row indices for each feature quantile
+  l2fc_quantileIndices <- lapply(1:args$quantiles, function(k) {
+    which(hypoDMRs_allReps_bins$l2fc_quantile == paste0("Quantile ", k))
+  })
+  for(k in 1:args$quantiles) {
+    hypoDMRs_ranLocGR[l2fc_quantileIndices[[k]]]$l2fc_random <- paste0("Random ", k)
+  }
+
+  hypoDMRs_ranLocGR_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_ranLocGR)),
+                                      start = as.integer(start(hypoDMRs_ranLocGR)-1),
+                                      end = as.integer(end(hypoDMRs_ranLocGR)),
+                                      name = as.integer(1:length(hypoDMRs_ranLocGR)),
+                                      score = as.character(hypoDMRs_ranLocGR$l2fc_random),
+                                      strand = as.character(strand(hypoDMRs_ranLocGR)),
+                                      stringsAsFactors = FALSE)
+  write.table(hypoDMRs_ranLocGR_bed,
+              file = paste0(hypoDMRdir,
+                            "features_", args$quantiles, "quantiles",
+                            "_by_change_in_",
+                            paste0(args$condition2, collapse = "_"),
+                            "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
+                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, "_ranLoc.bed"),
+              quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 }
 
