@@ -3,13 +3,13 @@
 # Use DMRcaller v1.24.0 to identify DMRs between two conditions
 # (e.g. mutant and wild type)
 
-
 # Usage:
 # source activate python
 # ./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' \
 #               --condition2 'cmt3_BSseq_Rep1' \
 #               --refbase 't2t-col.20210610' \
 #               --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
+#               --genomeRegion 'nonCEN' \
 #               --context 'CHG'
 # source deactivate
 
@@ -31,16 +31,18 @@ parser$add_argument("--refbase", type = "character", default = "t2t-col.20210610
                     help="Reference genome base name. Default: %(default)s")
 parser$add_argument("--chrName", type = "character",
                     help="Reference genome chromosome names for inclusion in DMRcaller contrast.")
+parser$add_argument("--genomeRegion", type = "character", default = "genomewide",
+                    help="Reference genome region from which to extract and export DMRs. Default: %(default)s")
 parser$add_argument("--context", type = "character",
                     help="cytosine methylation context.")
 
 # parse arguments
 args <- parser$parse_args()
 args_file <- "tempArgsObjectFile.rds"
-#saveRDS(args, args_file); print(args)
+saveRDS(args, args_file); print(args)
 
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' --context CHG")
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr4' 'genomewide' --context CHG")
+#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion 'genomewide' --context CHG")
 
 args <- readRDS(args_file)
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
@@ -127,33 +129,99 @@ for(x in 1:length(condition2_Reps)) {
 }
 
 # Define output directories
-hypoDMRdir <- "DMRcaller/hypoDMRs/"
-hyperDMRdir <- "DMRcaller/hyperDMRs/"
+hypoDMRdir <- paste0("DMRs/hypoDMRs/", paste0(args$chrName, collapse = "_"), "/")
+hyperDMRdir <- paste0("DMRs/hyperDMRs/", paste0(args$chrName, collapse = "_"), "/")
 system(paste0("[ -d ", hypoDMRdir, " ] || mkdir -p ", hypoDMRdir))
 system(paste0("[ -d ", hyperDMRdir, " ] || mkdir -p ", hyperDMRdir))
 
 # Genomic definitions
-fai <- read.table("/home/ajt200/analysis/nanopore/t2t-col.20210610/t2t-col.20210610.fa.fai", header = F)
+fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", args$refbase, ".fa.fai"), header = F)
 chrs <- fai$V1[which(fai$V1 %in% args$chrName)]
 chrLens <- fai$V2[which(fai$V1 %in% args$chrName)]
-genomeRegionGR <- GRanges(seqnames = chrs,
-                          ranges = IRanges(start = rep(1, length(chrs)),
-                                           end = chrLens),
-                          strand = "*")
 
 CENstart <- c(14841110,3823792,13597188,4203902,11784131)[which(fai$V1 %in% args$chrName)]
 CENend <- c(17559778,6045243,15733925,6977949,14551809)[which(fai$V1 %in% args$chrName)]
-CENGR <- GRanges(seqnames = chrs,
-                 ranges = IRanges(start = CENstart,
-                                  end = CENend),
-                 strand = "*")
-nonCENGR <- GRanges(seqnames = rep(chrs, 2),
-                    ranges = IRanges(start = c(rep(1, length(chrs)),
-                                               CENend+1),
-                                     end = c(CENstart-1,
-                                             chrLens)),
-                    strand = "*")
 
+CEN <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", args$refbase, ".fa.centromeres"), header = T)
+CEN <- CEN[which(fai$V1 %in% args$chrName),]
+# Not sure Dan defined pericentromeres at 10-kb resolution (appear to be at 100-kb resolution)
+periCEN <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", args$refbase, ".fa.Dan_pericentromeres"), header = T)
+periCEN <- periCEN[which(fai$V1 %in% args$chrName),]
+
+# Define genomic regions to be analysed (genomeRegionGR)
+if(args$genomeRegion == "arm") {
+  genomeRegionGR <- GRanges(seqnames = rep(chrs, 2),
+                            ranges = IRanges(start = c(rep(1, length(chrs)),
+                                                       periCEN$end+1),
+                                             end = c(periCEN$start-1,
+                                                     chrLens)),
+                            strand = "*")
+  genomeRegionGR <- genomeRegionGR[which(seqnames(genomeRegionGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "peri") {
+  genomeRegionGR <- GRanges(seqnames = chrs,
+                            ranges = IRanges(start = periCEN$start,
+                                             end = periCEN$end),
+                            strand = "*")
+  genomeRegionGR <- genomeRegionGR[which(seqnames(genomeRegionGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "CEN") {
+  genomeRegionGR <- GRanges(seqnames = chrs,
+                            ranges = IRanges(start = CEN$start,
+                                             end = CEN$end),
+                            strand = "*")
+  genomeRegionGR <- genomeRegionGR[which(seqnames(genomeRegionGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "nonCEN") {
+  genomeRegionGR <- GRanges(seqnames = rep(chrs, 2),
+                            ranges = IRanges(start = c(rep(1, length(chrs)),
+                                                       CEN$end+1),
+                                             end = c(CEN$start-1,
+                                                     chrLens)),
+                            strand = "*")
+  genomeRegionGR <- genomeRegionGR[which(seqnames(genomeRegionGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "genomewide") {
+  genomeRegionGR <- GRanges(seqnames = chrs,
+                            ranges = IRanges(start = rep(1, length(chrs)),
+                                             end = chrLens),
+                            strand = "*")
+  genomeRegionGR <- genomeRegionGR[which(seqnames(genomeRegionGR)@values %in% args$chrName)]
+} else {
+  stop("genomeRegion is not arm, peri, CEN, nonCEN or genomewide")
+}
+
+# Define genomic regions to be masked from analyses (genomeMaskGR)
+if(args$genomeRegion == "arm") {
+  genomeMaskGR <- GRanges(seqnames = chrs,
+                          ranges = IRanges(start = periCEN$start,
+                                           end = periCEN$end),
+                          strand = "*")
+  genomeMaskGR <- genomeMaskGR[which(seqnames(genomeMaskGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "peri") {
+  genomeMaskGR <- GRanges(seqnames = rep(chrs, 2),
+                          ranges = IRanges(start = c(rep(1, length(chrs)),
+                                                     periCEN$end+1),
+                                           end = c(periCEN$start-1,
+                                                   chrLens)),
+                          strand = "*")
+  genomeMaskGR <- genomeMaskGR[which(seqnames(genomeMaskGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "CEN") {
+  genomeMaskGR <- GRanges(seqnames = rep(chrs, 2),
+                          ranges = IRanges(start = c(rep(1, length(chrs)),
+                                                     CEN$end+1),
+                                           end = c(CEN$start-1,
+                                                   chrLens)),
+                          strand = "*")
+  genomeMaskGR <- genomeMaskGR[which(seqnames(genomeMaskGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "nonCEN") {
+  genomeMaskGR <- GRanges(seqnames = chrs,
+                          ranges = IRanges(start = CEN$start,
+                                           end = CEN$end),
+                          strand = "*")
+  genomeMaskGR <- genomeMaskGR[which(seqnames(genomeMaskGR)@values %in% args$chrName)]
+} else if(args$genomeRegion == "genomewide") {
+  genomeMaskGR <- GRanges()
+  genomeMaskGR <- genomeMaskGR[which(seqnames(genomeMaskGR)@values %in% args$chrName)]
+} else {
+  stop("genomeRegion is not arm, peri, CEN, nonCEN or genomewide")
+}
 
 
 if(length(condition2_Reps) == 1) {
@@ -267,7 +335,7 @@ if(length(condition2_Reps) == 1) {
                                    paste0(args$condition2, collapse = "_"),
                                    "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
                                    "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                   "_All_", paste0(args$chrName, collapse = "_"), ".gff3"))
+                                   "_", paste0(args$chrName, collapse = "_"), ".gff3"))
   hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
                                           start = as.integer(start(hypoDMRs_allReps_bins)-1),
                                           end = as.integer(end(hypoDMRs_allReps_bins)),
@@ -280,7 +348,7 @@ if(length(condition2_Reps) == 1) {
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
                             "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_All_", paste0(args$chrName, collapse = "_"), ".bed"),
+                            "_", paste0(args$chrName, collapse = "_"), ".bed"),
               quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
   # CEN
