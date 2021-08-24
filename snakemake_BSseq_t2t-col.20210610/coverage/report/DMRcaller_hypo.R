@@ -547,7 +547,7 @@ if(length(condition2_Reps) == 1) {
   
   # Apply ranLocStartSelect() on a per-chromosome basis so that
   # ranLocGR contains the same number of loci per chromosome as hypoDMRs_allReps_bins
-  chrs <- seqlevels(sortSeqlevels(hypoDMRs_allReps_bins))
+  chrs <- args$chrName[which(args$chrName %in% seqnames(hypoDMRs_allReps_bins)@values)]
   hypoDMRs_allReps_bins_ranLocGR <- GRanges()
   for(i in 1:length(chrs)) {
     hypoDMRs_allReps_binsChrGR <- hypoDMRs_allReps_bins[seqnames(hypoDMRs_allReps_bins) == chrs[i]]
@@ -602,7 +602,6 @@ if(length(condition2_Reps) == 1) {
               quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
   # DMRs in CEN
-  args$quantiles <- 4
   if(length(hypoDMRs_allReps_bins_CEN) > 0) {
     # Create new columns containing absolute change, log2 fold change, and relative change in args$context methylation proportion
     hypoDMRs_allReps_bins_CEN$absolute_change <- as.numeric( hypoDMRs_allReps_bins_CEN$proportion1 - hypoDMRs_allReps_bins_CEN$proportion2 )
@@ -778,7 +777,7 @@ if(length(condition2_Reps) == 1) {
     
     # Apply ranLocStartSelect() on a per-chromosome basis so that
     # ranLocGR contains the same number of loci per chromosome as hypoDMRs_allReps_bins_CEN
-    chrs <- seqlevels(sortSeqlevels(hypoDMRs_allReps_bins_CEN))
+    chrs <- args$chrName[which(args$chrName %in% seqnames(hypoDMRs_allReps_bins_CEN)@values)]
     hypoDMRs_allReps_bins_CEN_ranLocGR <- GRanges()
     for(i in 1:length(chrs)) {
       hypoDMRs_allReps_bins_CENChrGR <- hypoDMRs_allReps_bins_CEN[seqnames(hypoDMRs_allReps_bins_CEN) == chrs[i]]
@@ -1009,7 +1008,7 @@ if(length(condition2_Reps) == 1) {
     
     # Apply ranLocStartSelect() on a per-chromosome basis so that
     # ranLocGR contains the same number of loci per chromosome as hypoDMRs_allReps_bins_nonCEN
-    chrs <- seqlevels(sortSeqlevels(hypoDMRs_allReps_bins_nonCEN))
+    chrs <- args$chrName[which(args$chrName %in% seqnames(hypoDMRs_allReps_bins_nonCEN)@values)]
     hypoDMRs_allReps_bins_nonCEN_ranLocGR <- GRanges()
     for(i in 1:length(chrs)) {
       hypoDMRs_allReps_bins_nonCENChrGR <- hypoDMRs_allReps_bins_nonCEN[seqnames(hypoDMRs_allReps_bins_nonCEN) == chrs[i]]
