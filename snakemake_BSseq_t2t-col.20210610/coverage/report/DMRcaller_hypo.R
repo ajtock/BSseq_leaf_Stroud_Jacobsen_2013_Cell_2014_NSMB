@@ -5,13 +5,13 @@
 
 # Usage:
 # source activate python
-# ./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' \
-#               --condition2 'cmt3_BSseq_Rep1' \
-#               --refbase t2t-col.20210610 \
-#               --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
-#               --genomeRegion genomewide \
-#               --quantiles 6 \
-#               --context CHG
+# ./DMRcaller_hypo.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' \
+#                    --condition2 'cmt3_BSseq_Rep1' \
+#                    --refbase t2t-col.20210610 \
+#                    --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' \
+#                    --genomeRegion genomewide \
+#                    --quantiles 6 \
+#                    --context CHG
 # source deactivate
 
 library(argparse)
@@ -44,7 +44,7 @@ args <- parser$parse_args()
 
 #args_file <- "tempArgsObjectFile.rds"
 #saveRDS(args, args_file); print(args)
-#system("./DMRcaller.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion genomewide --quantiles 6 --context CHG")
+#system("./DMRcaller_hypo.R --condition1 'WT_BSseq_Rep2_2013,WT_BSseq_Rep3_2013,WT_BSseq_Rep1_2014' --condition2 'cmt3_BSseq_Rep1' --refbase t2t-col.20210610 --chrName 'Chr1,Chr2,Chr3,Chr4,Chr5' --genomeRegion genomewide --quantiles 6 --context CHG")
 #args <- readRDS(args_file)
 
 args$condition1 <- unlist(strsplit(args$condition1, split = ","))
@@ -146,6 +146,34 @@ CEN <- CEN[which(fai$V1 %in% args$chrName),]
 # Not sure Dan defined pericentromeres at 10-kb resolution (appear to be at 100-kb resolution)
 periCEN <- read.table(paste0("/home/ajt200/analysis/nanopore/", args$refbase, "/", args$refbase, ".fa.Dan_pericentromeres"), header = T)
 periCEN <- periCEN[which(fai$V1 %in% args$chrName),]
+
+CENGR <- GRanges(seqnames = chrs,
+                 ranges = IRanges(start = CEN$start,
+                                  end = CEN$end),
+                 strand = "*")
+CENGR <- CENGR[which(seqnames(CENGR)@values %in% args$chrName)]
+
+nonCENGR <- GRanges(seqnames = rep(chrs, 2),
+                    ranges = IRanges(start = c(rep(1, length(chrs)),
+                                               CEN$end+1),
+                                     end = c(CEN$start-1,
+                                             chrLens)),
+                    strand = "*")
+nonCENGR <- nonCENGR[which(seqnames(nonCENGR)@values %in% args$chrName)]
+
+periCENGR <- GRanges(seqnames = chrs,
+                     ranges = IRanges(start = periCEN$start,
+                                      end = periCEN$end),
+                     strand = "*")
+periCENGR <- periCENGR[which(seqnames(periCENGR)@values %in% args$chrName)]
+
+armGR <- GRanges(seqnames = rep(chrs, 2),
+                 ranges = IRanges(start = c(rep(1, length(chrs)),
+                                            periCEN$end+1),
+                                  end = c(periCEN$start-1,
+                                          chrLens)),
+                 strand = "*")
+armGR <- armGR[which(seqnames(armGR)@values %in% args$chrName)]
 
 # Define genomic regions to be analysed (genomeRegionGR)
 if(args$genomeRegion == "arm") {
@@ -252,6 +280,7 @@ if(length(condition2_Reps) == 1) {
                               contextPerRow = FALSE)
   dev.off()
 
+  set.seed(839493482738)
   # Compute DMRs using "bins" method
   DMRs_per_Rep_list_bins <- lapply(seq_along(condition1_Reps), function(x) {
     computeDMRs(methylationData1 = condition1_Reps[[x]],
@@ -287,6 +316,7 @@ if(length(condition2_Reps) == 1) {
     hypoDMRs_allReps_bins <- hypoDMRs_allReps_bins[unique(queryHits(hits))]
   }
   
+  set.seed(839493482738)
   hypoDMRs_allReps_bins <- mergeDMRsIteratively(DMRs = hypoDMRs_allReps_bins,
                                                 minGap = 200,
                                                 respectSigns = TRUE,
@@ -321,6 +351,17 @@ if(length(condition2_Reps) == 1) {
   hypoDMRs_allReps_bins <- sortSeqlevels(hypoDMRs_allReps_bins)
   hypoDMRs_allReps_bins <- sort(hypoDMRs_allReps_bins, ignore.strand = TRUE)
 
+  # Get CEN and nonCEN DMRs
+  hypoDMRs_allReps_bins_CEN_hits <- findOverlaps(query = CENGR,
+                                                 subject = hypoDMRs_allReps_bins,
+                                                 type = "any", select = "all",
+                                                 ignore.strand = TRUE)
+  hypoDMRs_allReps_bins_CEN <- hypoDMRs_allReps_bins[unique(subjectHits(hypoDMRs_allReps_bins_CEN_hits))]
+  hypoDMRs_allReps_bins_nonCEN <- hypoDMRs_allReps_bins[-subjectHits(hypoDMRs_allReps_bins_CEN_hits)]
+
+  stopifnot(length(hypoDMRs_allReps_bins) == length(hypoDMRs_allReps_bins_CEN) + length(hypoDMRs_allReps_bins_nonCEN))
+
+  # DMRs in args$genomeRegion
   # Create new columns containing absolute change, log2 fold change, and relative change in args$context methylation proportion
   hypoDMRs_allReps_bins$absolute_change <- as.numeric( hypoDMRs_allReps_bins$proportion1 - hypoDMRs_allReps_bins$proportion2 )
   # + 0.01 is an offset to prevent infinite log2 fold change (or equal relative change) values where proportions = 0
@@ -340,6 +381,7 @@ if(length(condition2_Reps) == 1) {
   hypoDMRs_allReps_bins$l2fc_quantile <- as.character("") 
   hypoDMRs_allReps_bins$rc_quantile <- as.character("") 
 
+  # Define quantiles
   ac_quantilesStats <- data.frame()
   l2fc_quantilesStats <- data.frame()
   rc_quantilesStats <- data.frame()
