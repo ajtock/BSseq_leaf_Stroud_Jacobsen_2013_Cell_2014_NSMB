@@ -282,7 +282,7 @@ if(length(condition2_Reps) == 1) {
                               contextPerRow = FALSE)
   dev.off()
 
-  set.seed(839493482738)
+  set.seed(83949341)
   # Compute DMRs using "bins" method
   DMRs_per_Rep_list_bins <- lapply(seq_along(condition1_Reps), function(x) {
     computeDMRs(methylationData1 = condition1_Reps[[x]],
@@ -318,7 +318,7 @@ if(length(condition2_Reps) == 1) {
     hypoDMRs_allReps_bins <- hypoDMRs_allReps_bins[unique(queryHits(hits))]
   }
   
-  set.seed(839493482738)
+  set.seed(83949341)
   hypoDMRs_allReps_bins <- mergeDMRsIteratively(DMRs = hypoDMRs_allReps_bins,
                                                 minGap = 200,
                                                 respectSigns = TRUE,
