@@ -131,8 +131,10 @@ for(x in 1:length(condition2_Reps)) {
 }
 
 # Define output directories
+plotDir <- "mC_coverage_plots_DMRcaller/"
 hypoDMRdir <- paste0("DMRs/hypoDMRs/", paste0(args$chrName, collapse = "_"), "/")
 #hyperDMRdir <- paste0("DMRs/hyperDMRs/", paste0(args$chrName, collapse = "_"), "/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", hypoDMRdir, " ] || mkdir -p ", hypoDMRdir))
 #system(paste0("[ -d ", hyperDMRdir, " ] || mkdir -p ", hyperDMRdir))
 
@@ -254,7 +256,7 @@ if(args$genomeRegion == "arm") {
 if(length(condition2_Reps) == 1) {
 
   # Plot methylation coverage for each replicate and condition
-  pdf(paste0("plotMethylationDataCoverage_",
+  pdf(paste0(plotDir, "plotMethylationDataCoverage_",
              paste0(args$condition1, collapse = "_"), "_",
              paste0(args$condition2, collapse = "_"), "_",
              paste0(args$chrName, collapse = "_"), "_",
