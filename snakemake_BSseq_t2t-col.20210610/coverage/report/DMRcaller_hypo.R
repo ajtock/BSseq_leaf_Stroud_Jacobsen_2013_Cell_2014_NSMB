@@ -482,8 +482,8 @@ if(length(condition2_Reps) == 1) {
                             "_by_absolute_change_in_",
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                            "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
               quote = FALSE, sep = "\t", row.names = FALSE)
   write.table(l2fc_quantilesStats,
               file = paste0(hypoDMRdir,
@@ -491,8 +491,8 @@ if(length(condition2_Reps) == 1) {
                             "_by_log2_fold_change_in_",
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                            "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
               quote = FALSE, sep = "\t", row.names = FALSE)
   write.table(rc_quantilesStats,
               file = paste0(hypoDMRdir,
@@ -500,8 +500,8 @@ if(length(condition2_Reps) == 1) {
                             "_by_relative_change_in_",
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                            "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".tsv"),
               quote = FALSE, sep = "\t", row.names = FALSE)
 
   # Export DMR GRanges as annotation files
@@ -511,8 +511,8 @@ if(length(condition2_Reps) == 1) {
                                    "_by_change_in_",
                                    paste0(args$condition2, collapse = "_"),
                                    "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                   "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".gff3"))
+                                   "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                                   "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".gff3"))
   hypoDMRs_allReps_bins_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins)),
                                           start = as.integer(start(hypoDMRs_allReps_bins)-1),
                                           end = as.integer(end(hypoDMRs_allReps_bins)),
@@ -526,8 +526,8 @@ if(length(condition2_Reps) == 1) {
                             "_by_change_in_",
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".bed"),
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                            "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, ".bed"),
               quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
@@ -597,8 +597,8 @@ if(length(condition2_Reps) == 1) {
                             "_by_change_in_",
                             paste0(args$condition2, collapse = "_"),
                             "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                            "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, "_ranLoc.bed"),
+                            "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                            "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_", args$genomeRegion, "_ranLoc.bed"),
               quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
   # DMRs in CEN
@@ -712,8 +712,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_absolute_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     write.table(l2fc_quantilesStats,
                 file = paste0(hypoDMRdir,
@@ -721,8 +721,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_log2_fold_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     write.table(rc_quantilesStats,
                 file = paste0(hypoDMRdir,
@@ -730,8 +730,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_relative_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
 
     # Export DMR GRanges as annotation files
@@ -741,8 +741,8 @@ if(length(condition2_Reps) == 1) {
                                      "_by_change_in_",
                                      paste0(args$condition2, collapse = "_"),
                                      "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                     "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                     "_", paste0(args$chrName, collapse = "_"), "_CEN.gff3"))
+                                     "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                                     "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN.gff3"))
     hypoDMRs_allReps_bins_CEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_CEN)),
                                                 start = as.integer(start(hypoDMRs_allReps_bins_CEN)-1),
                                                 end = as.integer(end(hypoDMRs_allReps_bins_CEN)),
@@ -756,8 +756,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_CEN.bed"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN.bed"),
                 quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
@@ -827,8 +827,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_CEN_ranLoc.bed"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_CEN_ranLoc.bed"),
                 quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
   }
 
@@ -943,8 +943,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_absolute_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     write.table(l2fc_quantilesStats,
                 file = paste0(hypoDMRdir,
@@ -952,8 +952,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_log2_fold_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     write.table(rc_quantilesStats,
                 file = paste0(hypoDMRdir,
@@ -961,8 +961,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_relative_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN.tsv"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
 
     # Export DMR GRanges as annotation files
@@ -972,8 +972,8 @@ if(length(condition2_Reps) == 1) {
                                      "_by_change_in_",
                                      paste0(args$condition2, collapse = "_"),
                                      "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                                     "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                                     "_", paste0(args$chrName, collapse = "_"), "_nonCEN.gff3"))
+                                     "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                                     "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN.gff3"))
     hypoDMRs_allReps_bins_nonCEN_bed <- data.frame(chr = as.character(seqnames(hypoDMRs_allReps_bins_nonCEN)),
                                                    start = as.integer(start(hypoDMRs_allReps_bins_nonCEN)-1),
                                                    end = as.integer(end(hypoDMRs_allReps_bins_nonCEN)),
@@ -987,8 +987,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_nonCEN.bed"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN.bed"),
                 quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 
@@ -1058,8 +1058,8 @@ if(length(condition2_Reps) == 1) {
                               "_by_change_in_",
                               paste0(args$condition2, collapse = "_"),
                               "_hypo", sub("p", "", args$context), "_DMRs_vs3reps",
-                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD", minProportionDifference_context, "_mG200",
-                              "_", paste0(args$chrName, collapse = "_"), "_nonCEN_ranLoc.bed"),
+                              "_mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200",
+                              "_in_", args$refbase, "_", paste0(args$chrName, collapse = "_"), "_nonCEN_ranLoc.bed"),
                 quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
   }
 
